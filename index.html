@@ -5,8 +5,11 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MONAMOUR | Luxury Experience</title>
-    <!-- Tailwind CSS CDN - O segredo do visual impecável -->
+    
+    <!-- Tailwind CSS CDN - O motor da estética -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Configuração de Design Monamour -->
     <script>
       tailwind.config = {
         theme: {
@@ -24,11 +27,19 @@
         }
       }
     </script>
+
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@200;300;400;500;600&display=swap');
-      body { background-color: #F9F8F6; margin: 0; overflow-x: hidden; }
-      /* Custom scrollbar para luxo */
-      ::-webkit-scrollbar { width: 5px; }
+      
+      body { 
+        background-color: #F9F8F6; 
+        margin: 0; 
+        overflow-x: hidden;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* Scrollbar minimalista */
+      ::-webkit-scrollbar { width: 4px; }
       ::-webkit-scrollbar-track { background: #F9F8F6; }
       ::-webkit-scrollbar-thumb { background: #C5A059; }
     </style>
