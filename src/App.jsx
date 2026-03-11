@@ -1,29 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   ShoppingBag, Menu, X, Instagram, MessageCircle, 
   User, Plus, Trash2, Save, Loader2, ChevronLeft, ChevronRight, Pencil
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// --- TRATAMENTO PARA COMPILAÇÃO NO PREVIEW ---
-let createClient;
-try {
-  const supabaseJS = await import('@supabase/supabase-js');
-  createClient = supabaseJS.createClient;
-} catch (e) {
-  createClient = () => ({
-    from: () => ({
-      select: () => ({ order: () => ({ data: [], error: null }) }),
-      on: () => ({ subscribe: () => ({}) }),
-      channel: () => ({ on: () => ({ subscribe: () => ({}) }) }),
-      removeChannel: () => {}
-    }),
-    channel: () => ({ on: () => ({ subscribe: () => ({}) }) }),
-    removeChannel: () => {}
-  });
-}
+// --- IMPORTAÇÃO DO SUPABASE VIA CDN PARA EVITAR ERROS DE COMPILAÇÃO ---
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-// --- CONFIGURAÇÃO SUPABASE ---
 const getEnvVar = (key) => {
   try { return import.meta.env[key] || ""; } 
   catch (e) { return ""; }
@@ -54,17 +38,35 @@ const getImagesArray = (imagesString) => {
     .filter(url => url !== "" && url !== null);
 };
 
-// --- COMPONENTE: GALERIA DO MODAL (ESTILO EDITORIAL) ---
+// --- COMPONENTE: GALERIA DO MODAL (ESTILO EDITORIAL COMPLETO) ---
 const ModalGallery = ({ images }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const imageList = getImagesArray(images);
 
   if (imageList.length <= 1) {
-    return <img src={imageList[0] || 'https://placehold.co/600x800/F9F8F6/121212?text=Curadoria'} className="w-full h-full object-cover" alt="Produto" />;
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-[#F0EFED]">
+        <img 
+          src={imageList[0] || 'https://placehold.co/600x800/F9F8F6/121212?text=Curadoria'} 
+          className="max-w-full max-h-full object-contain" 
+          alt="Produto" 
+        />
+      </div>
+    );
   }
 
+  const handleNext = (e) => {
+    if (e) e.stopPropagation();
+    setCurrentIndex((prev) => (prev + 1) % imageList.length);
+  };
+
+  const handlePrev = (e) => {
+    if (e) e.stopPropagation();
+    setCurrentIndex((prev) => (prev - 1 + imageList.length) % imageList.length);
+  };
+
   return (
-    <div className="relative w-full h-full group bg-[#F0EFED] overflow-hidden">
+    <div className="relative w-full h-full group bg-[#F0EFED] flex items-center justify-center overflow-hidden">
       <AnimatePresence mode="wait">
         <motion.img 
           key={currentIndex}
@@ -72,26 +74,39 @@ const ModalGallery = ({ images }) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.6 }}
-          className="w-full h-full object-cover" 
+          transition={{ duration: 0.5 }}
+          className="max-w-full max-h-full object-contain p-4" 
           alt={`Ângulo ${currentIndex + 1}`} 
         />
       </AnimatePresence>
       
-      <div className="absolute inset-y-0 left-0 w-1/4 z-10 cursor-pointer" onClick={() => setCurrentIndex((prev) => (prev - 1 + imageList.length) % imageList.length)} />
-      <div className="absolute inset-y-0 right-0 w-1/4 z-10 cursor-pointer" onClick={() => setCurrentIndex((prev) => (prev + 1) % imageList.length)} />
+      {/* Zonas de clique invisíveis para navegação rápida */}
+      <div className="absolute inset-y-0 left-0 w-1/5 z-10 cursor-pointer" onClick={handlePrev} />
+      <div className="absolute inset-y-0 right-0 w-1/5 z-10 cursor-pointer" onClick={handleNext} />
 
-      <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 flex justify-between pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-20">
-        <button className="p-2 md:p-3 bg-white/10 backdrop-blur-md rounded-full text-white border border-white/20 pointer-events-auto"><ChevronLeft size={18} /></button>
-        <button className="p-2 md:p-3 bg-white/10 backdrop-blur-md rounded-full text-white border border-white/20 pointer-events-auto"><ChevronRight size={18} /></button>
+      {/* Setas de Navegação - Z-index alto para garantir clique */}
+      <div className="absolute inset-x-6 top-1/2 -translate-y-1/2 flex justify-between pointer-events-none z-50">
+        <button 
+          onClick={handlePrev}
+          className="p-3 bg-white/40 backdrop-blur-md rounded-full text-black border border-white/20 pointer-events-auto hover:bg-white transition-all opacity-0 group-hover:opacity-100 shadow-lg"
+        >
+          <ChevronLeft size={24} strokeWidth={2.5} />
+        </button>
+        <button 
+          onClick={handleNext}
+          className="p-3 bg-white/40 backdrop-blur-md rounded-full text-black border border-white/20 pointer-events-auto hover:bg-white transition-all opacity-0 group-hover:opacity-100 shadow-lg"
+        >
+          <ChevronRight size={24} strokeWidth={2.5} />
+        </button>
       </div>
 
+      {/* Indicadores de Progresso */}
       <div className="absolute bottom-6 md:bottom-10 left-1/2 -translate-x-1/2 flex gap-2 z-20">
         {imageList.map((_, idx) => (
           <button 
             key={idx} 
-            onClick={() => setCurrentIndex(idx)}
-            className={`h-[2px] transition-all duration-500 ${idx === currentIndex ? 'bg-white w-8 md:w-10' : 'bg-white/30 w-3 md:w-4'}`} 
+            onClick={(e) => { e.stopPropagation(); setCurrentIndex(idx); }}
+            className={`h-[2px] transition-all duration-500 ${idx === currentIndex ? 'bg-[#C5A059] w-10' : 'bg-black/10 w-4'}`} 
           />
         ))}
       </div>
@@ -99,11 +114,25 @@ const ModalGallery = ({ images }) => {
   );
 };
 
-// --- COMPONENTE: ITEM DA GRELHA COM EFEITO HOVER ---
+// --- COMPONENTE: ITEM DA GRELHA COM EFEITO HOVER DINÂMICO ---
 const ProductCard = ({ product, onClick }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [imageIndex, setImageIndex] = useState(0);
   const imageList = getImagesArray(product.image);
-  const displayImage = (isHovered && imageList.length > 1) ? imageList[1] : imageList[0];
+  const timerRef = useRef(null);
+
+  useEffect(() => {
+    if (isHovered && imageList.length > 1) {
+      // Ale, aqui garantimos que o carrossel percorre TODAS as imagens enquanto o mouse está em cima
+      timerRef.current = setInterval(() => {
+        setImageIndex((prev) => (prev + 1) % imageList.length);
+      }, 1500); 
+    } else {
+      clearInterval(timerRef.current);
+      setImageIndex(0);
+    }
+    return () => clearInterval(timerRef.current);
+  }, [isHovered, imageList.length]);
 
   return (
     <motion.div 
@@ -116,23 +145,24 @@ const ProductCard = ({ product, onClick }) => {
       onClick={() => onClick(product)} 
       className="group cursor-pointer text-center"
     >
-      <div className="aspect-[3/4] overflow-hidden bg-[#F0EFED] mb-6 md:mb-10 relative shadow-md">
+      <div className="aspect-[3/4] overflow-hidden bg-[#F0EFED] mb-6 md:mb-10 relative shadow-md rounded-sm">
         <AnimatePresence mode="wait">
           <motion.img 
-            key={displayImage}
-            src={displayImage} 
-            initial={{ opacity: 0.9 }}
+            key={imageList[imageIndex]}
+            src={imageList[imageIndex]} 
+            initial={{ opacity: 0.8 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0.9 }}
-            transition={{ duration: 0.3 }}
+            exit={{ opacity: 0.8 }}
+            transition={{ duration: 0.4 }}
             className="w-full h-full object-cover grayscale-[15%] group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700" 
             alt={product.name} 
           />
         </AnimatePresence>
         
         {imageList.length > 1 && (
-          <div className="absolute bottom-3 right-3 bg-black/40 backdrop-blur-md px-2 py-1 text-[7px] uppercase tracking-widest text-white border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity">
-            +{imageList.length - 1} Ângulos
+          <div className="absolute bottom-4 right-4 bg-black/40 backdrop-blur-md px-3 py-1 text-[8px] uppercase tracking-[0.3em] text-white border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
+            <span className="w-1.5 h-1.5 bg-[#C5A059] rounded-full animate-pulse" />
+            {imageList.length} Ângulos
           </div>
         )}
       </div>
@@ -174,16 +204,16 @@ const ProductFormModal = ({ isOpen, onClose, initialData = null }) => {
           <input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full p-3 md:p-4 bg-transparent border-b border-black/10 outline-none focus:border-[#C5A059] transition-all font-serif text-lg" placeholder="Nome da Peça" />
           <div className="space-y-1">
             <label className="text-[8px] uppercase tracking-widest text-[#8E8E8E] font-bold">Links das Imagens (Separados por vírgula)</label>
-            <textarea required value={formData.image} onChange={e => setFormData({...formData, image: e.target.value})} className="w-full p-3 md:p-4 bg-transparent border-b border-black/10 outline-none focus:border-[#C5A059] transition-all min-h-[80px] text-xs font-mono" placeholder="URL1, URL2..." />
+            <textarea required value={formData.image} onChange={e => setFormData({...formData, image: e.target.value})} className="w-full p-3 md:p-4 bg-transparent border-b border-black/10 outline-none focus:border-[#C5A059] transition-all min-h-[100px] text-xs font-mono" placeholder="URL1, URL2, URL3..." />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="p-3 md:p-4 bg-transparent border-b border-black/10 outline-none text-xs">
+            <select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="p-3 md:p-4 bg-transparent border-b border-black/10 outline-none text-xs font-bold uppercase tracking-widest">
               <option>Vestidos</option><option>Alfaiataria</option><option>Exclusive</option><option>Acessórios</option>
             </select>
             <input value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} className="p-3 md:p-4 bg-transparent border-b border-black/10 outline-none focus:border-[#C5A059] text-xs" placeholder="Preço" />
           </div>
-          <textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full p-3 md:p-4 bg-transparent border-b border-black/10 outline-none focus:border-[#C5A059] text-xs" placeholder="Narrativa..." rows="2" />
-          <button disabled={loading} className="w-full py-5 bg-[#121212] text-white text-[9px] uppercase tracking-widest font-bold hover:bg-[#C5A059] transition-all flex items-center justify-center gap-3">
+          <textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full p-3 md:p-4 bg-transparent border-b border-black/10 outline-none focus:border-[#C5A059] text-xs leading-relaxed" placeholder="Narrativa da peça..." rows="3" />
+          <button disabled={loading} className="w-full py-5 bg-[#121212] text-white text-[10px] uppercase tracking-widest font-bold hover:bg-[#C5A059] transition-all flex items-center justify-center gap-3">
             {loading ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />} Guardar no Acervo
           </button>
         </form>
@@ -330,7 +360,7 @@ export default function App() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] flex items-center justify-center p-0 md:p-4">
             <div className="absolute inset-0 bg-[#121212]/95 backdrop-blur-lg" onClick={() => setSelectedProduct(null)} />
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative bg-[#F9F8F6] w-full md:max-w-7xl h-full md:h-[85vh] flex flex-col md:flex-row shadow-2xl overflow-y-auto md:overflow-hidden rounded-none md:rounded-sm">
-              <button onClick={() => setSelectedProduct(null)} className="absolute top-6 right-6 z-30 text-black md:text-black hover:rotate-90 transition-all bg-white/20 md:bg-transparent p-2 rounded-full backdrop-blur-sm md:backdrop-blur-none"><X size={24} /></button>
+              <button onClick={() => setSelectedProduct(null)} className="absolute top-6 right-6 z-50 text-black md:text-black hover:rotate-90 transition-all bg-white/40 md:bg-white/20 p-2 rounded-full backdrop-blur-sm shadow-md"><X size={24} /></button>
               <div className="w-full md:w-[65%] h-[50vh] md:h-auto overflow-hidden bg-[#F0EFED]">
                 <ModalGallery images={selectedProduct.image} />
               </div>
